@@ -40,7 +40,6 @@ def startup_event():
     finally:
         db.close()
 
-# Fiksni ID servisa koji koristimo kroz cijelu aplikaciju budući da nema prijave
 ZADANI_SERVIS_ID = 1
 
 # =========================================================================
@@ -64,8 +63,8 @@ def zaprimi_popravak(
     email: str = Form(...),
     brand: str = Form(...),
     model_uredaja: str = Form(...),
-    brand: str = Form(...),
-    imei: str = Form(...),
+    imei_sn: Optional[str] = Form(""), # Novo polje s obrasca
+    opis_kvara: str = Form(...),
     oprema: List[str] = Form(default=[]),
     db: Session = Depends(get_db)
 ):
@@ -84,15 +83,17 @@ def zaprimi_popravak(
     if oprema:
         prosireni_opis += f" | Donesena oprema: {', '.join(oprema)}"
 
-    # 2. Kreiranje servisnog naloga
+    # 2. Kreiranje servisnog naloga s IMEI brojem
     nalog = ServisniNalog(
         servis_id=ZADANI_SERVIS_ID, 
         klijent_id=klijent.id, 
         tracking_token=secrets.token_hex(3).upper(),
         brand=brand, 
         model_uredjaja=model_uredaja, 
+        imei_sn=imei_sn, # Spremanje IMEI broja
         opis_kvara=prosireni_opis,
-        status='zaprimljeno'
+        status='zaprimljeno',
+        napomena_servisera="" # Početno je prazna dok serviser ne doda
     )
     
     db.add(nalog)
@@ -101,7 +102,7 @@ def zaprimi_popravak(
     return RedirectResponse(url="/admin", status_code=303)
 
 # =========================================================================
-# 3. LAŽNE RUTE ZA LOGIN I REGISTER (Da linkovi na index.html ne puknu)
+# 3. LAŽNE RUTE ZA LOGIN I REGISTER
 # =========================================================================
 @app.get("/register", response_class=HTMLResponse)
 def prikazi_registraciju(request: Request):
@@ -111,18 +112,13 @@ def prikazi_registraciju(request: Request):
 def prikazi_login(request: Request):
     return RedirectResponse(url="/admin", status_code=303)
 
-@app.get("/logout")
-def html_logout():
-    return RedirectResponse(url="/", status_code=303)
-
 # =========================================================================
-# 4. ADMIN PANEL (Potpuno otvoren s uključenim podacima klijenta)
+# 4. ADMIN PANEL (CRUD)
 # =========================================================================
 @app.get("/admin", response_class=HTMLResponse)
 def prikazi_admin_panel(request: Request, db: Session = Depends(get_db)):
     nalozi = db.query(ServisniNalog).filter(ServisniNalog.servis_id == ZADANI_SERVIS_ID).all()
     
-    # Za svaki nalog izvlačimo kompletne podatke klijenta i dodajemo ih objektu nalozi
     for nalog in nalozi:
         klijent = db.query(Klijent).filter(Klijent.id == nalog.klijent_id).first()
         if klijent:
@@ -133,6 +129,10 @@ def prikazi_admin_panel(request: Request, db: Session = Depends(get_db)):
             nalog.ime_klijenta = "Nepoznat Klijent"
             nalog.broj_telefona = "N/A"
             nalog.email_klijenta = "N/A"
+            
+        # Osiguravamo da nema None vrijednosti radi lakšeg rada JavaScripta u HTML-u
+        if not nalog.imei_sn: nalog.imei_sn = ""
+        if not nalog.napomena_servisera: nalog.napomena_servisera = ""
 
     return templates.TemplateResponse(request=request, name="admin.html", context={"nalozi": nalozi})
 
@@ -144,7 +144,6 @@ def azuriraj_status_naloga(nalog_id: int, status: str = Form(...), db: Session =
         db.commit()
     return RedirectResponse(url="/admin", status_code=303)
 
-# --- BRISANJE NALOGA I KLIJENTA ---
 @app.post("/admin/obrisi-nalog/{nalog_id}")
 def obrisi_nalog(nalog_id: int, db: Session = Depends(get_db)):
     nalog = db.query(ServisniNalog).filter(ServisniNalog.id == nalog_id, ServisniNalog.servis_id == ZADANI_SERVIS_ID).first()
@@ -154,7 +153,6 @@ def obrisi_nalog(nalog_id: int, db: Session = Depends(get_db)):
         db.commit()
     return RedirectResponse(url="/admin", status_code=303)
 
-# --- UREĐIVANJE CIJELOG NALOGA (IZ MODALA) ---
 @app.post("/admin/uredi-nalog/{nalog_id}")
 def uredi_nalog(
     nalog_id: int,
@@ -163,17 +161,21 @@ def uredi_nalog(
     email: str = Form(...),
     brand: str = Form(...),
     model_uredjaja: str = Form(...),
+    imei_sn: Optional[str] = Form(""), # Novo polje za update
     opis_kvara: str = Form(...),
     status: str = Form(...),
+    napomena_servisera: Optional[str] = Form(""), # Novo polje za update
     db: Session = Depends(get_db)
 ):
     nalog = db.query(ServisniNalog).filter(ServisniNalog.id == nalog_id, ServisniNalog.servis_id == ZADANI_SERVIS_ID).first()
     if nalog:
-        # 1. Ažuriranje naloga
+        # 1. Ažuriranje naloga (uključujući IMEI i napomenu)
         nalog.brand = brand
         nalog.model_uredjaja = model_uredjaja
+        nalog.imei_sn = imei_sn
         nalog.opis_kvara = opis_kvara
         nalog.status = status
+        nalog.napomena_servisera = napomena_servisera
         
         # 2. Ažuriranje klijenta
         klijent = db.query(Klijent).filter(Klijent.id == nalog.klijent_id).first()
@@ -196,11 +198,3 @@ def prikazi_super_admin(request: Request, db: Session = Depends(get_db)):
         broj_naloga = db.query(ServisniNalog).filter(ServisniNalog.servis_id == s.id).count()
         izvjestaj.append({"podaci": s, "broj_naloga": broj_naloga})
     return templates.TemplateResponse(request=request, name="super_admin.html", context={"servisi": izvjestaj})
-
-@app.post("/super-admin/obrisi-servis/{id_servisa}")
-def obrisi_servis(id_servisa: int, db: Session = Depends(get_db)):
-    db.query(ServisniNalog).filter(ServisniNalog.servis_id == id_servisa).delete()
-    db.query(Klijent).filter(Klijent.servis_id == id_servisa).delete()
-    db.query(Servis).filter(Servis.id == id_servisa).delete()
-    db.commit()
-    return RedirectResponse(url="/super-admin", status_code=303)
