@@ -14,7 +14,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex items-center space-x-3">
-                    <span class="text-2xl">🛠️</span>
+                    <span class="text-2xl"></span>
                     <span class="text-xl font-bold tracking-tight text-slate-900">MobiFix Admin Panel</span>
                 </div>
                 <div class="flex items-center space-x-4">
@@ -72,12 +72,12 @@
                             <td class="py-4 px-6 text-right space-x-2">
                                 <button onclick="otvoriModal('{{ nalog.id }}', '{{ nalog.ime_klijenta }}', '{{ nalog.broj_telefona }}', '{{ nalog.email_klijenta }}', '{{ nalog.brand }}', '{{ nalog.model_uredjaja }}', '{{ nalog.imei_sn }}', '{{ nalog.opis_kvara | replace('\'', '\\\'') | replace('\n', ' ') }}', '{{ nalog.status }}', '{{ nalog.napomena_servisera | replace('\'', '\\\'') | replace('\n', ' ') }}')" 
                                         class="bg-blue-50 hover:bg-blue-100 text-blue-600 text-xs font-semibold px-3 py-1.5 rounded-lg border border-blue-200/50 transition cursor-pointer">
-                                    🔍 Uredi / Detalji
+                                     Uredi / Detalji
                                 </button>
                                 
                                 <form action="/admin/obrisi-nalog/{{ nalog.id }}" method="POST" class="inline" onsubmit="return confirm('Sigurno želite trajno obrisati ovaj nalog i klijenta iz baze podataka?');">
                                     <button type="submit" class="bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold px-3 py-1.5 rounded-lg border border-red-200/50 transition cursor-pointer">
-                                        🗑️ Obriši
+                                        Obriši
                                     </button>
                                 </form>
                             </td>
@@ -141,16 +141,16 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-amber-600 mb-1">📝 Interna napomena servisera <span class="text-slate-400 font-normal">(Profesor ovo vidi samo u adminu)</span></label>
+                    <label class="block text-xs font-semibold text-amber-600 mb-1">Interna napomena servisera <span class="text-slate-400 font-normal">(Profesor ovo vidi samo u adminu)</span></label>
                     <textarea name="napomena_servisera" id="modalNapomena" rows="3" placeholder="Ugrađen zamjenski ekran, testirano punjenje, čeka se isporuka baterije..." class="w-full px-3 py-2 rounded-xl border border-amber-200 bg-amber-50/30 text-sm focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none text-slate-700"></textarea>
                 </div>
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-500 mb-1">Status Uređaja</label>
                     <select name="status" id="modalStatus" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none">
-                        <option value="zaprimljeno">📥 Zaprimljeno</option>
-                        <option value="u_radu">⏳ U radu</option>
-                        <option value="zavrseno">✅ Završeno</option>
+                        <option value="zaprimljeno"> Zaprimljeno</option>
+                        <option value="u_radu"> U radu</option>
+                        <option value="zavrseno">Završeno</option>
                     </select>
                 </div>
 
