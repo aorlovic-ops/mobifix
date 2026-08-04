@@ -1,6 +1,5 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Text
-from sqlalchemy.orm import declarative_base, relationship, create_engine, sessionmaker
-
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, Text
+from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 DATABASE_URL = "sqlite:///./mobifix.db"
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
